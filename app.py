@@ -11,8 +11,10 @@ from dotenv import load_dotenv
 import time
 import random
 from termcolor import colored
+import logging
 
 os.system('color')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%I:%M:%S')
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -62,7 +64,13 @@ def get_price(html, store):
     elif store == "bhphotovideo":
         element = soup.find('div', {'data-selenium':'pricingPrice'}).text.strip()
         price = Price.fromstring(element)
-    
+    elif store == "bestbuy":
+        element = soup.find('div', {'class':'priceView-hero-price priceView-customer-price'}).text.strip()
+        price = Price.fromstring(element)
+    elif store == "centralcomputer":
+        element = soup.find('span', {'class':'price'}).text.strip()
+        price = Price.fromstring(element)
+
     return price.amount_float
 
 def get_title(html, store):
@@ -73,6 +81,10 @@ def get_title(html, store):
         title = soup.find('h1', {'class':'product-title'}).text.strip()
     elif store == "bhphotovideo":
         title = soup.find('h1', {'data-selenium':'productTitle'}).text.strip()
+    elif store == "bestbuy":
+        title = soup.find('div', {'class':'sku-title'}).text.strip()
+    elif store == "centralcomputer":
+        title = soup.find('div', {'class':'productname'}).text.strip()
     return title
 
 def get_mail(df):
@@ -98,13 +110,13 @@ def get_message(df):
     # Formatting data in dataframe to be able to display it properly
     list_of_data = df.values.tolist()
     total_rows = len(list_of_data)
-    total_datas = len(list_of_data)
     for element in list_of_data:
         del element[ALERT_PRICE_INDEX]
         del element[ALERT_INDEX-1]
     column_names = list(df)
     column_names.pop()
-    del column_names[1]        
+    del column_names[1]
+    total_datas = len(column_names)
 
     # Display data in terminal and email
     row_index = 0
@@ -143,5 +155,6 @@ def main():
 while(True):
     main()
     time_to_wait = random.uniform(2.0, 4.0)*60.0
-    print("Waiting " + str(round(time_to_wait/60.0, 2)) + " minutes to check again...\n")
+    # current_time = datetime.now().strftime("%H:%M:%S")
+    logging.info("Waiting " + str(round(time_to_wait/60.0, 2)) + " minutes to check again...\n")
     time.sleep(time_to_wait)
