@@ -30,7 +30,11 @@ SAVE_TO_CSV = True
 PRICES_CSV = "prices.csv"
 SEND_MAIL = True
 ALERT_PRICE_INDEX = 1
-ALERT_INDEX = 4
+CHECK_STOCK_INDEX = 2
+STOCK_INDEX = 3
+ALERT_INDEX = 6
+
+# duplicate_stores = []
 
 def get_urls(csv_file):
     df = pd.read_csv(csv_file)
@@ -39,16 +43,25 @@ def get_urls(csv_file):
 def process_products(df):
     updated_products = []
     for product in df.to_dict("records"):
-        html = get_response(product["URL"])
         store = product["URL"].split('.', 2)[1]
+        html = get_response(product["URL"], store)
         product["TITLE"] = get_title(html, store)
         product["PRICE"] = get_price(html, store)
+
+        if product["CHECK_STOCK"]:
+            product["STOCK"] = get_stock(html, store)
+        else:
+            product["STOCK"] = None
+
         product["ALERT"] = product["PRICE"] < product["ALERT_PRICE"]
         updated_products.append(product)
     return pd.DataFrame(updated_products)
 
-def get_response(url):
+def get_response(url, store):
+    # if store in duplicate_stores:
+    #     wait
     response = requests.get(url, headers=HEADERS)
+    # duplicate_stores.append(store)
     return response.text
 
 def get_price(html, store):
@@ -70,6 +83,9 @@ def get_price(html, store):
     elif store == "centralcomputer":
         element = soup.find('span', {'class':'price'}).text.strip()
         price = Price.fromstring(element)
+    elif store == "gamenerdz":
+        element = soup.find('span', {'class':'price price--withoutTax'}).text.strip()
+        price = Price.fromstring(element)
 
     return price.amount_float
 
@@ -85,10 +101,32 @@ def get_title(html, store):
         title = soup.find('div', {'class':'sku-title'}).text.strip()
     elif store == "centralcomputer":
         title = soup.find('div', {'class':'productname'}).text.strip()
+    elif store == "gamenerdz":
+        title = soup.find('h1', {'class':'productView-title'}).text.strip()
     return title
 
+def get_stock(html, store):
+    soup = BeautifulSoup(html, "lxml")
+    if store == "bestbuy":
+        stock = soup.find('div', {'class':'fulfillment-add-to-cart-button'}).text.strip()
+        if stock != "Coming Soon" and stock != "Sold Out":
+            stock = True
+        else:
+            stock = False
+    elif store == "gamenerdz":
+        stock = soup.find('a', {'data-type':'restock'}).text.strip()
+        print("GAMENERDZ STOCK")
+        print(stock)
+        if stock != "Set Restock Notification":
+            stock = True
+        else:
+            stock = False
+    else:
+        stock = None
+    return stock
+
 def get_mail(df):
-    subject = "Price Drop on Tracked Item"
+    subject = "Price/Stock Change Detected"
     mail_body = get_message(df)
     subject_and_message = f"Subject:{subject}\n\n{mail_body}".encode('utf-8')
     return subject_and_message
@@ -110,12 +148,17 @@ def get_message(df):
     # Formatting data in dataframe to be able to display it properly
     list_of_data = df.values.tolist()
     total_rows = len(list_of_data)
+
+    # Must remove index in order of lowest to highest since list is changing. Pop removes alert
     for element in list_of_data:
+        del element[CHECK_STOCK_INDEX]
         del element[ALERT_PRICE_INDEX]
-        del element[ALERT_INDEX-1]
+        element.pop()
+        if element[STOCK_INDEX] == None:
+            element[STOCK_INDEX] = "N/A"
+    
     column_names = list(df)
-    column_names.pop()
-    del column_names[1]
+    column_names = format_columns(column_names)
     total_datas = len(column_names)
 
     # Display data in terminal and email
@@ -127,7 +170,12 @@ def get_message(df):
             body += f"{column_names[data_index] + ':':<8}" + str(list_of_data[row_index][data_index]) + "\n"
             data_index += 1
 
+        # If current price less than desired price then green and mail
         if list_of_data[row_index][2] < df["ALERT_PRICE"].values[row_index]:
+            print(colored(body, 'light_green', attrs=["bold"]))
+            mail_body += body
+        # If product is in stock then green and email, but only for certain products
+        elif list_of_data[row_index][3] == True:
             print(colored(body, 'light_green', attrs=["bold"]))
             mail_body += body
         elif list_of_data[row_index][2] == df["ALERT_PRICE"].values[row_index]:
@@ -140,14 +188,19 @@ def get_message(df):
 
     return mail_body
 
+def format_columns(columns):
+    column_names = [name for name in columns if not ("ALERT_PRICE" in name or "CHECK_STOCK" in name or "ALERT" in name)]
+    return column_names
+
 def main():
     pd.options.display.max_colwidth = 100
     df = get_urls(PRODUCT_URL_CSV)
     df_updated = process_products(df)
 
     if SAVE_TO_CSV:
-        df_updated.to_csv(PRICES_CSV, index=False, mode="a")
-    if SEND_MAIL & df_updated.any(axis=None, bool_only=True):
+        df_updated.to_csv(PRICES_CSV, index=False)
+    # Check if send_mail is set to true and if alert or in stock stock is true
+    if SEND_MAIL & (df_updated["ALERT"].any(axis=None) == True or df_updated["STOCK"].any(axis=None) == True):
         send_mail(df_updated)
     else:
         get_message(df_updated)
@@ -155,6 +208,5 @@ def main():
 while(True):
     main()
     time_to_wait = random.uniform(2.0, 4.0)*60.0
-    # current_time = datetime.now().strftime("%H:%M:%S")
     logging.info("Waiting " + str(round(time_to_wait/60.0, 2)) + " minutes to check again...\n")
     time.sleep(time_to_wait)
