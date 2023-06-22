@@ -18,13 +18,28 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefm
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
-
 HEADERS = {
-    'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0'
-                    'AppleWebKit/537.36 (KHTML, like Gecko)'
-                    'Chrome/114.0.0.0 Safari/537.36'),
-    'Accept-Language': 'en-US, en;q=0.5'
+        'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0 '
+                        'AppleWebKit/537.36 (KHTML, like Gecko) '
+                        'Chrome/114.0.0.0 Safari/537.36'),
+        'Accept-Language': 'en-US,en;q=0.5'
 }
+
+HEADERS_NEW = [{
+        'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0'),
+        'Accept-Language': 'en-US,en;q=0.5'
+    },
+    {
+        'User-Agent': ( 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7 '
+                        'AppleWebKit/605.1.15 (KHTML, like Gecko) '
+                        'Version/15.0 Safari/605.1.15'),
+        'Accept-Language': 'en-gb'
+    },
+    {
+        'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'),
+        'Accept-Language': 'en-US,en;q=0.9'
+    }
+]
 PRODUCT_URL_CSV = "products.csv"
 SAVE_TO_CSV = True
 PRICES_CSV = "prices.csv"
@@ -60,7 +75,8 @@ def process_products(df):
 def get_response(url, store):
     # if store in duplicate_stores:
     #     wait
-    response = requests.get(url, headers=HEADERS)
+    header = HEADERS_NEW[random.randint(0,2)]
+    response = requests.get(url, headers=header)
     # duplicate_stores.append(store)
     return response.text
 
@@ -115,8 +131,6 @@ def get_stock(html, store):
             stock = False
     elif store == "gamenerdz":
         stock = soup.find('a', {'data-type':'restock'}).text.strip()
-        print("GAMENERDZ STOCK")
-        print(stock)
         if stock != "Set Restock Notification":
             stock = True
         else:
@@ -195,7 +209,13 @@ def format_columns(columns):
 def main():
     pd.options.display.max_colwidth = 100
     df = get_urls(PRODUCT_URL_CSV)
-    df_updated = process_products(df)
+    try:
+        df_updated = process_products(df)
+    except requests.exceptions.RequestException as e:  # This is the correct syntax
+        logging.error(e)
+        print('\nRetrying...')
+        time.sleep(30)
+        df_updated = process_products(df)
 
     if SAVE_TO_CSV:
         df_updated.to_csv(PRICES_CSV, index=False)
@@ -207,6 +227,6 @@ def main():
 
 while(True):
     main()
-    time_to_wait = random.uniform(2.0, 4.0)*60.0
+    time_to_wait = random.uniform(15.5, 30.5)*60.0
     logging.info("Waiting " + str(round(time_to_wait/60.0, 2)) + " minutes to check again...\n")
     time.sleep(time_to_wait)
