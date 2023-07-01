@@ -102,6 +102,9 @@ def get_price(html, store):
     elif store == "gamenerdz":
         element = soup.find('span', {'class':'price price--withoutTax'}).text.strip()
         price = Price.fromstring(element)
+    elif store == "walmart":
+        element = soup.find('span', {'itemprop':'price'}).text.strip()
+        price = Price.fromstring(element)
 
     return price.amount_float
 
@@ -119,6 +122,8 @@ def get_title(html, store):
         title = soup.find('div', {'class':'productname'}).text.strip()
     elif store == "gamenerdz":
         title = soup.find('h1', {'class':'productView-title'}).text.strip()
+    elif store == "walmart":
+        title = soup.find('h1', {'itemprop':'name'}).text.strip()
     return title
 
 def get_stock(html, store):
@@ -211,10 +216,11 @@ def main():
     df = get_urls(PRODUCT_URL_CSV)
     try:
         df_updated = process_products(df)
-    except requests.exceptions.RequestException as e:  # This is the correct syntax
+    except Exception as e:
         logging.error(e)
-        print('\nRetrying...')
-        time.sleep(30)
+        time_to_wait = random.uniform(25.5, 35.5)
+        print(f'\nRetrying in {time_to_wait} seconds...')
+        time.sleep(time_to_wait)
         df_updated = process_products(df)
 
     if SAVE_TO_CSV:
@@ -227,6 +233,6 @@ def main():
 
 while(True):
     main()
-    time_to_wait = random.uniform(15.5, 30.5)*60.0
+    time_to_wait = random.uniform(5.5, 15.5)*60.0
     logging.info("Waiting " + str(round(time_to_wait/60.0, 2)) + " minutes to check again...\n")
     time.sleep(time_to_wait)
