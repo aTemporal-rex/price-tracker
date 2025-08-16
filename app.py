@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 from os.path import join, dirname
@@ -12,36 +12,73 @@ import time
 import random
 from termcolor import colored
 import logging
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
-os.system('color')
+# os.system('color')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%I:%M:%S')
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
-HEADERS = {
-        'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0 '
-                        'AppleWebKit/537.36 (KHTML, like Gecko) '
-                        'Chrome/114.0.0.0 Safari/537.36'),
-        'Accept-Language': 'en-US,en;q=0.5'
-}
+# HEADERS = {
+#         'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0 '
+#                         'AppleWebKit/537.36 (KHTML, like Gecko) '
+#                         'Chrome/114.0.0.0 Safari/537.36'),
+#         'Accept-Language': 'en-US,en;q=0.5'
+# }
 
-HEADERS_NEW = [{
-        'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0'),
-        'Accept-Language': 'en-US,en;q=0.5'
+# HEADERS = {
+#     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+#     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+#     "Accept-Language": "en-US,en;q=0.5",
+#     "Upgrade-Insecure-Requests": "1",
+#     "Sec-Fetch-Dest": "document",
+#     "Sec-Fetch-Mode": "navigate",
+#     "Sec-Fetch-Site": "same-origin",
+#     "Sec-Fetch-User": "?1",
+#     "referrer": "https://www.microcenter.com/search/search_results.aspx?N=4294966995+4294814242",
+#     "method": "GET",
+#     "mode": "cors"
+# }
+
+# HEADERS_NEW = [{
+#         'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0'),
+#         'Accept-Language': 'en-US,en;q=0.5'
+#     },
+#     {
+#         'User-Agent': ( 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15'),
+#         'Accept-Language': 'en-gb'
+#     },
+#     {
+#         'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'),
+#         'Accept-Language': 'en-US,en;q=0.9'
+#     }
+# ]
+HEADERS_NEW = [
+    {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
     },
     {
-        'User-Agent': ( 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7 '
-                        'AppleWebKit/605.1.15 (KHTML, like Gecko) '
-                        'Version/15.0 Safari/605.1.15'),
-        'Accept-Language': 'en-gb'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
+        'Accept-Language': 'en-US,en;q=0.9'
     },
     {
-        'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'),
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+    },
+    {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0',
+        'Accept-Language': 'en-US,en;q=0.9'
+    },
+    {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         'Accept-Language': 'en-US,en;q=0.9'
     }
 ]
+
 PRODUCT_URL_CSV = "products.csv"
-SAVE_TO_CSV = True
+SAVE_TO_CSV = False
 PRICES_CSV = "prices.csv"
 SEND_MAIL = True
 ALERT_PRICE_INDEX = 1
@@ -75,18 +112,49 @@ def process_products(df):
 def get_response(url, store):
     # if store in duplicate_stores:
     #     wait
-    header = HEADERS_NEW[random.randint(0,2)]
-    response = requests.get(url, headers=header)
-    # duplicate_stores.append(store)
-    return response.text
+    # header = HEADERS_NEW[random.randint(0, len(HEADERS_NEW) - 1)]
+    # header.update({
+    #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    #     "Referer": "https://www.amazon.com/",
+    #     "Connection": "keep-alive",
+    #     "Upgrade-Insecure-Requests": "1"
+    # })
+    # time.sleep(random.uniform(2, 5))  # Random delay
+    # response = requests.get(url, headers=header)
+    # if response.status_code != 200 or "captcha" in response.text.lower() or "robot check" in response.text.lower() or "meow" in response.text.lower():
+    #     logging.error(f"Blocked or failed to fetch {url}. Response: {response.text[:100]}")
+    #     return ""
+    # # duplicate_stores.append(store)
+    # return response.text
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument(f"user-agent={random.choice(HEADERS_NEW)['User-Agent']}")
+    driver = webdriver.Chrome(options=chrome_options)
+    try:
+        driver.get(url)
+        time.sleep(random.uniform(3, 6))  # Let page load
+        html = driver.page_source
+        if "captcha" in html.lower() or "robot check" in html.lower() or "meow" in html.lower():
+            logging.error(f"Blocked or failed to fetch {url}. Response: {html[:100]}")
+            return ""
+        return html
+    finally:
+        driver.quit()
 
 def get_price(html, store):
     soup = BeautifulSoup(html, "lxml")
 
     if store == "amazon":
-        element1 = soup.find('span', {'class':"a-price-whole"}).text.strip()
-        element2 = soup.find('span', {'class':"a-price-fraction"}).text.strip()
-        price = Price.fromstring(element1 + element2)
+        main_span = soup.find('span', {'class':"a-price aok-align-center reinventPricePriceToPayMargin priceToPay"})
+        if main_span is None:
+            return float('inf')
+        else:
+            main_span.text.strip()
+        price_whole = main_span.find('span', {'class':"a-price-whole"}).text.strip()
+        price_fraction = main_span.find('span', {'class':"a-price-fraction"}).text.strip()
+        price = Price.fromstring(price_whole + price_fraction)
     elif store == "newegg":
         element = soup.find('li', {'class':"price-current"}).text.strip()
         price = Price.fromstring(element)
@@ -105,13 +173,20 @@ def get_price(html, store):
     elif store == "walmart":
         element = soup.find('span', {'itemprop':'price'}).text.strip()
         price = Price.fromstring(element)
+    elif store == "microcenter":
+        element = soup.find('span', {'id':'pricing'}).text.strip()
+        price = Price.fromstring(element)
 
     return price.amount_float
 
 def get_title(html, store):
     soup = BeautifulSoup(html, "lxml")
     if store == "amazon":
-        title = soup.find('span', {'id':'productTitle'}).text.strip()
+        title = soup.find('span', {'id':'productTitle'})
+        if title:
+            title = title.text.strip()
+        else:
+            title = "Couldn't get title"
     elif store == "newegg":
         title = soup.find('h1', {'class':'product-title'}).text.strip()
     elif store == "bhphotovideo":
@@ -124,13 +199,16 @@ def get_title(html, store):
         title = soup.find('h1', {'class':'productView-title'}).text.strip()
     elif store == "walmart":
         title = soup.find('h1', {'itemprop':'name'}).text.strip()
+    elif store == "microcenter":
+        title = soup.find('div', {'class':'product-header'}).text.strip()
+
     return title
 
 def get_stock(html, store):
     soup = BeautifulSoup(html, "lxml")
     if store == "bestbuy":
         stock = soup.find('div', {'class':'fulfillment-add-to-cart-button'}).text.strip()
-        if stock != "Coming Soon" and stock != "Sold Out":
+        if stock != "Coming Soon" and stock != "Sold Out" and stock != "Unavailable Nearby":
             stock = True
         else:
             stock = False
@@ -142,6 +220,7 @@ def get_stock(html, store):
             stock = False
     else:
         stock = None
+
     return stock
 
 def get_mail(df):
@@ -180,24 +259,34 @@ def get_message(df):
     column_names = format_columns(column_names)
     total_datas = len(column_names)
 
+    price_index = column_names.index("PRICE")
+
     # Display data in terminal and email
     row_index = 0
     while row_index < total_rows:
         data_index = 0
         
         while data_index < total_datas:
-            body += f"{column_names[data_index] + ':':<8}" + str(list_of_data[row_index][data_index]) + "\n"
+            # body += f"{column_names[data_index] + ':':<8}" + str(list_of_data[row_index][data_index]) + "\n"
+            # data_index += 1
+            value = list_of_data[row_index][data_index]
+            # Check if value is inf and column is PRICE
+            if column_names[data_index].upper() == "PRICE" and value == float('inf'):
+                display_value = "OUT OF STOCK"
+            else:
+                display_value = value
+            body += f"{column_names[data_index] + ':':<8}" + str(display_value) + "\n"
             data_index += 1
 
         # If current price less than desired price then green and mail
-        if list_of_data[row_index][2] < df["ALERT_PRICE"].values[row_index]:
+        if list_of_data[row_index][price_index] < df["ALERT_PRICE"].values[row_index]:
             print(colored(body, 'light_green', attrs=["bold"]))
             mail_body += body
         # If product is in stock then green and email, but only for certain products
-        elif list_of_data[row_index][3] == True:
+        elif list_of_data[row_index][STOCK_INDEX] == True:
             print(colored(body, 'light_green', attrs=["bold"]))
             mail_body += body
-        elif list_of_data[row_index][2] == df["ALERT_PRICE"].values[row_index]:
+        elif list_of_data[row_index][price_index] == df["ALERT_PRICE"].values[row_index]:
             print(colored(body, 'light_yellow', attrs=["bold"]))
         else:
             print(colored(body, 'red', attrs=["bold"]))
@@ -208,7 +297,7 @@ def get_message(df):
     return mail_body
 
 def format_columns(columns):
-    column_names = [name for name in columns if not ("ALERT_PRICE" in name or "CHECK_STOCK" in name or "ALERT" in name)]
+    column_names = [name for name in columns if not ("ALERT_PRICE" in name or "CHECK_STOCK" in name or "ALERT" in name or "STOCK" in name)]
     return column_names
 
 def main():
