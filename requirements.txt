@@ -76,7 +76,7 @@ systemd-python==234
 termcolor==2.3.0
 trio==0.22.0
 trio-websocket==0.10.3
-Twisted==22.1.0
+Twisted==24.7.0rc1
 typing_extensions==4.14.1
 tzdata==2023.3
 ubuntu-pro-client==8001
