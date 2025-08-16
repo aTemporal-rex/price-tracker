@@ -15,45 +15,11 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-# os.system('color')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%I:%M:%S')
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
-# HEADERS = {
-#         'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0 '
-#                         'AppleWebKit/537.36 (KHTML, like Gecko) '
-#                         'Chrome/114.0.0.0 Safari/537.36'),
-#         'Accept-Language': 'en-US,en;q=0.5'
-# }
 
-# HEADERS = {
-#     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-#     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-#     "Accept-Language": "en-US,en;q=0.5",
-#     "Upgrade-Insecure-Requests": "1",
-#     "Sec-Fetch-Dest": "document",
-#     "Sec-Fetch-Mode": "navigate",
-#     "Sec-Fetch-Site": "same-origin",
-#     "Sec-Fetch-User": "?1",
-#     "referrer": "https://www.microcenter.com/search/search_results.aspx?N=4294966995+4294814242",
-#     "method": "GET",
-#     "mode": "cors"
-# }
-
-# HEADERS_NEW = [{
-#         'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0'),
-#         'Accept-Language': 'en-US,en;q=0.5'
-#     },
-#     {
-#         'User-Agent': ( 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15'),
-#         'Accept-Language': 'en-gb'
-#     },
-#     {
-#         'User-Agent': ( 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'),
-#         'Accept-Language': 'en-US,en;q=0.9'
-#     }
-# ]
 HEADERS_NEW = [
     {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -86,8 +52,6 @@ CHECK_STOCK_INDEX = 2
 STOCK_INDEX = 3
 ALERT_INDEX = 6
 
-# duplicate_stores = []
-
 def get_urls(csv_file):
     df = pd.read_csv(csv_file)
     return df
@@ -110,22 +74,6 @@ def process_products(df):
     return pd.DataFrame(updated_products)
 
 def get_response(url, store):
-    # if store in duplicate_stores:
-    #     wait
-    # header = HEADERS_NEW[random.randint(0, len(HEADERS_NEW) - 1)]
-    # header.update({
-    #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    #     "Referer": "https://www.amazon.com/",
-    #     "Connection": "keep-alive",
-    #     "Upgrade-Insecure-Requests": "1"
-    # })
-    # time.sleep(random.uniform(2, 5))  # Random delay
-    # response = requests.get(url, headers=header)
-    # if response.status_code != 200 or "captcha" in response.text.lower() or "robot check" in response.text.lower() or "meow" in response.text.lower():
-    #     logging.error(f"Blocked or failed to fetch {url}. Response: {response.text[:100]}")
-    #     return ""
-    # # duplicate_stores.append(store)
-    # return response.text
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--disable-gpu")
@@ -267,8 +215,6 @@ def get_message(df):
         data_index = 0
         
         while data_index < total_datas:
-            # body += f"{column_names[data_index] + ':':<8}" + str(list_of_data[row_index][data_index]) + "\n"
-            # data_index += 1
             value = list_of_data[row_index][data_index]
             # Check if value is inf and column is PRICE
             if column_names[data_index].upper() == "PRICE" and value == float('inf'):
