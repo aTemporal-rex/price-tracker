@@ -88,5 +88,5 @@ websocket-client==1.8.0
 websockets==13.1
 wsproto==1.2.0
 yt-dlp==2024.9.29.232819.dev0
-zipp==1.0.0
+zipp==3.19.1
 zope.interface==5.4.0
